@@ -28,8 +28,8 @@ export class LLRPTypedNet<
                 return super.send(m);
             }
         
-            async recv(timeout?: number) {
-                const proxy = await super.recv(timeout);
+            async recv(timeout?: number, messageName?: string) {
+                const proxy = await super.recv(timeout, messageName);
                 const LLRPTypedMessage = this.CR.getCoreMessageClass(proxy.getName());
                 // unfortunately, we need to cast as any to avoid the excessively deep type matching in the class registry (when using a typed constructor instead of the proxy)
                 return new LLRPTypedMessage(proxy.origin as any);
