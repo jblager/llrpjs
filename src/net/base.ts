@@ -65,8 +65,8 @@ export class LLRPNet {
     private async onData(data: Buffer) {
         try {
             this._scanner.addBuffer.call(this._scanner, data);
-            const msgBuf = this._scanner.getNext.call(this._scanner);
-            if (msgBuf) {
+            let msgBuf;
+            while (msgBuf = this._scanner.getNext.call(this._scanner)) {
                 const msg = new LLRPMessage(msgBuf).decode();
                 this._ee.emit("message", msg);
                 this._ee.emit(msg.getName(), msg);
