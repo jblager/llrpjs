@@ -43,7 +43,7 @@ export class LLRPNet {
         return new Promise<void>((r, j) => j(new LLRPError("ERR_LLRP_READER_OFFLINE", `Cannot send data`)));
     }
 
-    private async invalidRecv () {
+    private async invalidRecv (messageName: string) {
         return new Promise<LLRPMessage>((r, j) => j(new LLRPError("ERR_LLRP_READER_OFFLINE", `Cannot receive data`)));
     }
 
@@ -56,8 +56,9 @@ export class LLRPNet {
         });
     }
 
-    private async validRecv() {
-        return new Promise<LLRPMessage>(resolve => this._ee.once("message", msg => {
+
+    private async validRecv(messageName: string = "message") {
+        return new Promise<LLRPMessage>(resolve => this._ee.once(messageName, msg => {
             resolve(msg);
         }))
     };
@@ -155,33 +156,26 @@ export class LLRPNet {
         return this._send(m);
     }
 
-    async recv(timeout = 5000) {
+    async recv(timeout: number = 5000, messageName: string = "message") {
         const _timer = new Timer;
         if (timeout > 0) _timer.start(timeout);
-        let msg: LLRPMessage = await Promise.race([this._recv(), _timer.watch()]);
+        let msg: LLRPMessage = await Promise.race([this._recv(messageName), _timer.watch()]);
         _timer.cancel();
         return msg;
     }
 
-    async transact(m: LLRPMessage<LLRPUserData>, timeout = 5000) {
+    async transact(m: LLRPMessage<LLRPUserData>, timeout: number = 5000) {
         let rsp: LLRPMessage<LLRPUserData> = null;
-        const resName = m.getResponseName();
+        const responseName = m.getResponseName();
 
         await this._lock.acquire();         // prevent other transactions
 
-        let recvPromise = this.recv(timeout);
-        await this.send(m);
-        if (resName) {
-            while (true) {
-                try {
-                    rsp = await recvPromise;
-                } catch (e) {
-                    this._lock.release();
-                    throw e;
-                }
-                // check type
-                if (rsp.getName() === resName) break;
-            }
+        if (responseName) {
+            const recvPromise = this.recv(timeout, responseName);
+            await this.send(m);
+            rsp = await recvPromise;
+        } else {
+            await this.send(m);
         }
 
         this._lock.release();               // allow transactions
