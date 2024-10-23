@@ -116,7 +116,7 @@ reader.on("message", msg => {
 reader.on("READER_EVENT_NOTIFICATION", msg => {
     let gpiEvent = msg.getReaderEventNotificationData()
         .getGPIEvent();
-    if (1 === gpiEvent.getGPIPortNumber()) {
+    if (gpiEvent && 1 === gpiEvent.getGPIPortNumber()) {
         //        doSomethingSerious();
     } else {
         //        wellMeh();
